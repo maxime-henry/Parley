@@ -44,6 +44,21 @@ sequenceDiagram
     AA->>A: "The contract ends on March 31"
 ```
 
+## Use cases
+
+### "Does your app already do this?"
+I'm working on a project and my AI needs to know whether my colleague Bob's app already implements a feature, for example "Does Bob's billing service support refunds in multiple currencies?"
+
+1. My AI sends the question to Bob's agent over A2A.
+2. Bob's agent checks what Bob's AI can access: his repository, issues, docs.
+3. Bob's sharing rules allow technical questions from teammates, so it answers directly: *"Partially. Refunds work in EUR and USD, and other currencies are planned in issue #142. The endpoint is `POST /refunds`."*
+4. My AI carries on with that information. Neither Bob nor I had to stop what we were doing.
+
+If the question had touched something Bob's rules mark as private, such as an unreleased roadmap, his agent would have asked him first.
+
+### Replacing AI-written email ping-pong
+Any question you would normally send by email ("When does the v2 contract end?", "Can you send me the latest figures?") goes agent to agent instead. You get the answer without either human acting as a relay.
+
 ### What if the other person doesn't use Parley?
 
 They get an email containing the question and a link. They can answer on a simple web page, by hand or with their own AI, and sign up from there if they want their own agent. Parley is useful from the first user, and every question sent invites one more.
