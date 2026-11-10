@@ -1,3 +1,10 @@
+# Node / Parley
+node_modules/
+*.db
+*.db-shm
+*.db-wal
+.parley/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

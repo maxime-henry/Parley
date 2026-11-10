@@ -2,7 +2,7 @@
 
 Open-source delegate agents that talk to each other on your behalf. Built on [A2A](https://a2a-protocol.org) and [MCP](https://modelcontextprotocol.io): your AI asks, informs and coordinates with other people's AIs, following your sharing rules, and only interrupts you when it matters.
 
-> **Status:** early design. Nothing is built yet. This README is the plan, and we welcome feedback on it.
+> **Status:** early proof of concept. The relay, the policy engine and the MCP server run locally (see [Try it locally](#try-it-locally)). Feedback on the plan is welcome.
 
 ---
 
@@ -44,6 +44,22 @@ sequenceDiagram
     AA->>A: "The contract ends on March 31"
 ```
 
+## Why not just A2A?
+
+A2A is the wire, not the delegate. It defines how two running agents exchange tasks; it is explicitly not an agent, not a messaging app, and it assumes you already host an agent server. Parley is to A2A what a mail provider is to SMTP:
+
+| You need | A2A | Parley |
+| --- | --- | --- |
+| Tasks, messages, discovery | ✅ | Uses A2A as is |
+| A reachable agent address for a *person* | ❌ | A hosted A2A endpoint and Agent Card per user |
+| Something that answers while you're not chatting | ❌ | Your AI via MCP, a local daemon, or a hosted agent |
+| Sharing rules and hard limits | ❌ | Policy engine enforced in code |
+| Asking *you* when it matters | ❌ | Interruptions with signed approve/refuse links |
+| Contacts, trust levels, rate limits, prompt-injection defence | ❌ | Built in |
+| A readable log | ❌ | Per-user audit trail |
+
+Any A2A client can already talk to a Parley user's agent.
+
 ## Use cases
 
 ### "Does your app already do this?"
@@ -82,23 +98,63 @@ They get an email containing the question and a link. They can answer on a simpl
 | **Sharing rules** | What your agent may share, with whom and on which topics. Written in plain language, plus a few hard limits ("never share my health data", "never accept a meeting before 9am"). |
 | **Interruption** | The moment your agent stops and asks you, because it lacks information, a rule requires it, or it would commit you to something (a date, a price, a promise). |
 
+## Try it locally
+
+Requires Node.js 22.18 or later (TypeScript runs natively, no build step).
+
+```sh
+npm install
+npm test
+
+# Create two users; each command prints a token once
+npm run parley -- create-user alice Alice
+npm run parley -- create-user bob Bob
+npm run parley -- set-rules bob examples/rules.yaml
+
+# Start the relay on http://localhost:8787
+PARLEY_SECRET=change-me npm run relay
+```
+
+Add the MCP server to your AI client (Copilot, Claude, Cursor…), one per user:
+
+```json
+{
+  "servers": {
+    "parley": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/path/to/Parley/packages/mcp/src/index.ts"],
+      "env": { "PARLEY_URL": "http://localhost:8787", "PARLEY_TOKEN": "pk_..." }
+    }
+  }
+}
+```
+
+Then ask your AI: *"Ask @bob whether the billing service supports multi-currency refunds"*. On Bob's side: *"Check my Parley inbox and answer what you can"*. Answers are checked in code before they leave; anything held for approval sends Bob a link (printed in the relay console, or pushed via [ntfy](https://ntfy.sh) after `PUT /me/notify`).
+
+| Package | What it does |
+| --- | --- |
+| [packages/core](packages/core) | Sharing rules format, pre/post policy checks, untrusted-input fencing |
+| [packages/relay](packages/relay) | A2A endpoint per user (`/u/{handle}/.well-known/agent-card.json`), owner API, approval pages |
+| [packages/mcp](packages/mcp) | MCP server: `ask_contact`, `check_inbox`, `answer`, `escalate_to_me`, `list_threads`, `get_thread`, `get_sharing_rules` |
+
 ## Roadmap
 
 ### Phase 0: Foundations
-- [ ] Message format for threads, questions, answers and interruptions, mapped onto A2A tasks and messages
-- [ ] Sharing rules format (plain language + hard limits)
+- [x] Message format for threads, questions, answers and interruptions, mapped onto A2A tasks and messages
+- [x] Sharing rules format (plain language + hard limits)
 - [ ] Threat model: prompt injection, data leaks, impersonation
 - [ ] Choose an identity approach (see [Open questions](#open-questions))
 
 ### Phase 1: Parley as an MCP server (v0.1, individuals)
 Parley is an MCP server you add to your existing AI (Claude, ChatGPT, Cursor, …). The hosted service holds each user's inbox and outbox and relays messages between agents.
-- [ ] MCP tools: `ask_contact`, `check_inbox`, `answer`, `escalate_to_me`, `set_sharing_rules`, `list_threads`
-- [ ] Hosted relay: accounts, contacts, threads, inbox and outbox
-- [ ] Agent-to-agent delivery between Parley users over A2A
+- [x] MCP tools: `ask_contact`, `check_inbox`, `answer`, `escalate_to_me`, `list_threads` (sharing rules are read-only to the AI)
+- [ ] Hosted relay: accounts, contacts, threads, inbox and outbox (runs locally on SQLite; AWS deployment next)
+- [x] Agent-to-agent delivery between Parley users over A2A
 - [ ] Email bridge: questions to people without Parley, with a web answer page
 - [ ] Your AI answers incoming questions on its own whenever it runs, including on a schedule where your client supports scheduled tasks
-- [ ] Interruptions by email
-- [ ] Readable log of every thread
+- [ ] Interruptions by email (push via ntfy and signed approval links work today)
+- [x] Readable log of every thread
 
 **Limitation:** in this phase, answers go out only when your AI is running. Phase 2 removes that limit.
 

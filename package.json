@@ -1,0 +1,21 @@
+{
+  "name": "parley",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"packages/*/test/**/*.test.ts\"",
+    "relay": "node packages/relay/src/server.ts",
+    "parley": "node packages/relay/src/cli.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

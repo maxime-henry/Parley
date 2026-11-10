@@ -1,0 +1,28 @@
+# Bob's sharing rules. The AI declares a topic; the relay enforces everything else in code.
+unknownContacts: refuse
+maxQuestionsPerDay: 30
+defaultAction: ask
+
+contacts:
+  - handle: alice
+    trust: teammate
+
+topics:
+  - name: technical
+    description: Questions about my code, repositories, APIs, docs and public issues.
+    action: answer
+    trust: [trusted, teammate]
+  - name: roadmap
+    description: Plans, dates and priorities that are not public yet.
+    action: ask
+  - name: personal
+    description: Health, family, finances, HR matters.
+    action: refuse
+
+hardLimits:
+  askBeforeCommitting: true
+  neverShare:
+    - pattern: "(api[_-]?key|secret|password|passwd|token)\\s*[:=]"
+      reason: credentials
+    - pattern: "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+      reason: private key
